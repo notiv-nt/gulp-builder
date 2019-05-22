@@ -1,3 +1,7 @@
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = 'development';
+}
+
 const gulp = require('gulp');
 const path = require('path');
 const fs = require('fs');
@@ -6,10 +10,6 @@ const _ = require('gulp-load-plugins')();
 const errorNotifier = require('gulp-error-notifier');
 const browserSync = require('browser-sync').create();
 const nanoid = require('nanoid');
-
-if (!process.env.NODE_ENV) {
-  process.env.NODE_ENV = 'development';
-}
 
 const LOCALS = {
   MINIFY: null,
@@ -45,10 +45,18 @@ const PP = (p, params = {}) => {
 //
 // ------------
 const tasksConfig = (() => {
-  let configPath = path.resolve(LOCALS.ROOT, './.gulp-config.js');
+  const defaultConfig = {
+    // null, 'livereload', 'browsersync'
+    devServer: 'browsersync',
+    browserlist: '> 1%, ie 11',
+    useHash: true,
+  };
 
-  return require(fs.existsSync(configPath) ? configPath : path.resolve(__dirname, './.gulp-config.js'));
-})()();
+  let configPath = path.resolve(LOCALS.ROOT, './.gulp-config.js');
+  const config = require(fs.existsSync(configPath) ? configPath : path.resolve(__dirname, './.gulp-config.js'))(LOCALS);
+
+  return Object.assign({}, defaultConfig, config);
+})();
 
 //
 // ------------
@@ -155,6 +163,20 @@ module.javascript = async (config) => {
     config.params = {};
   }
 
+  const entries = (() => {
+    let entry = PP(config.entry);
+
+    if (!Array.isArray(entry)) {
+      entry = [entry];
+    }
+
+    return entry
+      .map((path) => {
+        return fs.existsSync(path) ? path : null;
+      })
+      .filter((a) => a);
+  })();
+
   const rollup = require('rollup');
   const replace = require('rollup-plugin-replace');
   const postcss = require('rollup-plugin-postcss');
@@ -182,18 +204,33 @@ module.javascript = async (config) => {
     commonPlugins.push(terser());
   }
 
-  const bundle = async (options) => {
+  const bundle = async (bundleType, options) => {
     const bundle = await rollup.rollup(options);
 
     await bundle.generate(options);
-    await bundle.write(options);
+
+    const { output } = await bundle.write(options);
+
+    // not fallback
+    if (bundleType === 'modern') {
+      if (tasksConfig.devServer === 'livereload') {
+        _.livereload.reload(output.fileName);
+      }
+      if (tasksConfig.devServer === 'browsersync') {
+        browserSync.reload(output.fileName);
+      }
+    }
   };
 
   const entryFileNames = LOCALS.HASH ? `[name]${LOCALS.HASH}.js` : '[name].js';
 
+  if (!entries.length) {
+    return;
+  }
+
   // Moden
-  bundle({
-    input: PP(config.entry),
+  bundle('modern', {
+    input: entries,
     output: {
       dir: PP(config.dest),
       entryFileNames,
@@ -205,8 +242,8 @@ module.javascript = async (config) => {
 
   // Fallback
   if (typeof config.params.useFallback === 'undefined' || config.params.useFallback) {
-    bundle({
-      input: PP(config.entry),
+    bundle('fallback', {
+      input: entries,
       output: {
         dir: path.resolve(PP(config.dest), '_'),
         entryFileNames,
@@ -397,7 +434,7 @@ gulp.task('production', () => {
   process.env.NODE_ENV = 'production';
 
   LOCALS.MINIFY = true;
-  LOCALS.HASH = LOCALS.BUILD_VERSION;
+  LOCALS.HASH = tasksConfig.useHash ? LOCALS.BUILD_VERSION : '';
   LOCALS.ENV = process.env.NODE_ENV;
   LOCALS.NODE_ENV = process.env.NODE_ENV;
 
@@ -408,7 +445,7 @@ gulp.task('review', () => {
   process.env.NODE_ENV = 'production';
 
   LOCALS.MINIFY = true;
-  LOCALS.HASH = LOCALS.BUILD_VERSION;
+  LOCALS.HASH = tasksConfig.useHash ? LOCALS.BUILD_VERSION : '';
   LOCALS.ENV = process.env.NODE_ENV;
   LOCALS.NODE_ENV = process.env.NODE_ENV;
 
