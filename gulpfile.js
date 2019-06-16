@@ -177,6 +177,10 @@ module.javascript = async (config) => {
       .filter((a) => a);
   })();
 
+  if (!entries.length) {
+    return;
+  }
+
   const rollup = require('rollup');
   const replace = require('rollup-plugin-replace');
   const postcss = require('rollup-plugin-postcss');
@@ -185,91 +189,67 @@ module.javascript = async (config) => {
   const { terser } = require('rollup-plugin-terser');
   const commonjs = require('rollup-plugin-commonjs');
 
-  const commonPlugins = [
-    replace({
-      'process.env.NODE_ENV': JSON.stringify(LOCALS.NODE_ENV),
-      'process.env.BUILD_VERSION': JSON.stringify(LOCALS.BUILD_VERSION),
-      'process.env.HASH': JSON.stringify(LOCALS.HASH),
-    }),
-
-    resolve({
-      browser: true,
-    }),
-
-    commonjs(),
-    postcss(),
-  ];
-
-  if (LOCALS.MINIFY) {
-    commonPlugins.push(terser());
-  }
-
-  const bundle = async (bundleType, options) => {
-    const bundle = await rollup.rollup(options);
-
-    await bundle.generate(options);
-
-    const { output } = await bundle.write(options);
-
-    // not fallback
-    if (bundleType === 'modern') {
-      if (tasksConfig.devServer === 'livereload') {
-        _.livereload.reload(output.fileName);
-      }
-      if (tasksConfig.devServer === 'browsersync') {
-        browserSync.reload(output.fileName);
-      }
-    }
-  };
-
-  const entryFileNames = LOCALS.HASH ? `[name]${LOCALS.HASH}.js` : '[name].js';
-
-  if (!entries.length) {
-    return;
-  }
-
-  // Moden
-  bundle('modern', {
+  const options = {
     input: entries,
     output: {
       dir: PP(config.dest),
-      entryFileNames,
+      entryFileNames: LOCALS.HASH ? `[name]${LOCALS.HASH}.js` : '[name].js',
       sourcemap: !LOCALS.MINIFY,
-      format: 'es',
+      format: config.params.format || 'system',
+      name: config.params.name,
+      // amd, cjs, system, esm, iife, umd
     },
-    plugins: [...commonPlugins],
-  });
+    plugins: [
+      replace({
+        'process.env.NODE_ENV': JSON.stringify(LOCALS.NODE_ENV),
+        'process.env.BUILD_VERSION': JSON.stringify(LOCALS.BUILD_VERSION),
+        'process.env.HASH': JSON.stringify(LOCALS.HASH),
+      }),
 
-  // Fallback
-  if (typeof config.params.useFallback === 'undefined' || config.params.useFallback) {
-    bundle('fallback', {
-      input: entries,
-      output: {
-        dir: path.resolve(PP(config.dest), '_'),
-        entryFileNames,
-        sourcemap: !LOCALS.MINIFY,
-        format: 'system',
-      },
-      plugins: [
-        babel({
-          exclude: 'node_modules/**',
-          presets: [
-            [
-              '@babel/env',
-              {
-                useBuiltIns: 'usage',
-                corejs: '2',
-                modules: false,
-                targets: tasksConfig.browserlist,
-              },
-            ],
+      resolve({
+        browser: true,
+      }),
+
+      commonjs(),
+      postcss(),
+    ],
+  };
+
+  // undefined, userbabel === true
+  if (!config.params.hasOwnProperty('useBabel') || config.params.useBabel === true) {
+    options.plugins.push(
+      babel({
+        exclude: 'node_modules/**',
+        presets: [
+          [
+            '@babel/env',
+            {
+              useBuiltIns: 'usage',
+              corejs: '2',
+              modules: false,
+              targets: tasksConfig.browserlist,
+            },
           ],
-          plugins: ['@babel/plugin-syntax-dynamic-import'],
-        }),
+        ],
+        plugins: ['@babel/plugin-syntax-dynamic-import'],
+      })
+    );
+  }
 
-        ...commonPlugins,
-      ],
-    });
+  if (LOCALS.MINIFY && config.params.minify !== false) {
+    options.plugins.push(terser());
+  }
+
+  const bundle = await rollup.rollup(options);
+  await bundle.generate(options);
+
+  const { output } = await bundle.write(options);
+
+  if (tasksConfig.devServer === 'livereload') {
+    _.livereload.reload(output.fileName);
+  }
+  if (tasksConfig.devServer === 'browsersync') {
+    browserSync.reload(output.fileName);
   }
 };
 
