@@ -10,7 +10,7 @@
   "bin": {
     "ngb": "./cli.js"
   },
-  "devDependencies": {
+  "dependencies": {
     "@babel/cli": "^7.4.4",
     "@babel/core": "^7.4.4",
     "@babel/plugin-syntax-dynamic-import": "^7.2.0",
