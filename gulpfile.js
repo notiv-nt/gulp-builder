@@ -112,7 +112,7 @@ module.css = (config) => {
     require('autoprefixer')({
       // Work with IE
       // grid: true,
-      browsers: tasksConfig.browserlist,
+      overrideBrowserslist: tasksConfig.browserlist,
     }),
 
     require('css-mqpacker')({
