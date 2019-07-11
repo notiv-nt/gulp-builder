@@ -7,9 +7,17 @@ const path = require('path');
 const fs = require('fs');
 const args = require('minimist')(process.argv);
 const _ = require('gulp-load-plugins')();
-const errorNotifier = require('gulp-error-notifier');
 const browserSync = require('browser-sync').create();
 const nanoid = require('nanoid');
+
+const errorHandler = () => ({
+  errorHandler(err) {
+    _.notify.onError({
+      title: 'Gulp error in ' + err.plugin,
+      message: err.toString(),
+    })(err);
+  },
+});
 
 const LOCALS = {
   MINIFY: null,
@@ -63,7 +71,7 @@ const tasksConfig = (() => {
 module.html = (config) => {
   gulp
     .src(PP(config.entry))
-    .pipe(errorNotifier())
+    .pipe(_.plumber(errorHandler()))
     .pipe(
       _.include({
         includePaths: [PP(config.params.root)],
@@ -136,7 +144,7 @@ module.css = (config) => {
 
   gulp
     .src(PP(config.entry))
-    .pipe(errorNotifier())
+    .pipe(_.plumber(errorHandler()))
 
     .pipe(
       _.postcss(preSass, {
@@ -317,7 +325,7 @@ module.static = (config) => {
 module.icons = (config) => {
   gulp
     .src(PP(config.watchOn))
-    .pipe(errorNotifier())
+    .pipe(_.plumber(errorHandler()))
     .pipe(
       _.svgSprite({
         shape: {

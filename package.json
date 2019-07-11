@@ -1,6 +1,6 @@
 {
   "name": "@notiv/gulp-builder",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "scripts": {
     "review": "gulp review",
     "production": "gulp production",
@@ -24,13 +24,14 @@
     "cross-spawn": "^6.0.5",
     "css-mqpacker": "^7.0.0",
     "gulp": "^3.9.1",
-    "gulp-error-notifier": "^1.1.0",
     "gulp-if": "^2.0.2",
     "gulp-imagemin": "^6.0.0",
     "gulp-include": "^2.4.1",
     "gulp-livereload": "^4.0.1",
     "gulp-load-plugins": "^1.5.0",
     "gulp-mustache": "^4.1.1",
+    "gulp-notify": "^3.2.0",
+    "gulp-plumber": "^1.2.1",
     "gulp-postcss": "^8.0.0",
     "gulp-rename": "^1.4.0",
     "gulp-sass": "^4.0.2",
