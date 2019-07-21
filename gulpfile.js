@@ -133,6 +133,8 @@ module.css = (config) => {
       overrideBrowserslist: tasksConfig.browserlist,
     }),
 
+    // require('doiuse')(tasksConfig.browserlist),
+
     require('css-mqpacker')({
       sort: require('sort-css-media-queries'),
     }),
@@ -249,7 +251,7 @@ module.javascript = async (config) => {
             },
           ],
         ],
-        plugins: ['@babel/plugin-syntax-dynamic-import', '@babel/plugin-syntax-class-properties'],
+        plugins: ['@babel/plugin-syntax-dynamic-import'],
       })
     );
   }
