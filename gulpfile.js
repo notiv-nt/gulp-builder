@@ -89,13 +89,21 @@ module.html = (config) => {
 };
 
 module.css = (config) => {
+  const mediaOptions = {
+    sizes: {
+      sm: '576px',
+      md: '768px',
+      lg: '992px',
+      xl: '1200px',
+    },
+  };
+
   const preSass = [
     require('postcss-easy-import')(),
     require('@notiv/postcss-property-lookup')({
       lookupPattern: /@([a-z-]+)\b/g,
     }),
-    require('postcss-inline-media'),
-    require('postcss-media-minmax'),
+    require('postcss-media-functions').generateVariables(mediaOptions, 'scss'),
     require('postcss-simple-vars')({
       silent: true,
       keep: true,
@@ -106,6 +114,8 @@ module.css = (config) => {
   ];
 
   const postSass = [
+    require('postcss-media-functions')(mediaOptions),
+
     require('postcss-selector-matches'),
     require('postcss-selector-not'),
 
