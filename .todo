@@ -3,3 +3,4 @@ Add shared config
 Improve clean
 jpg/png > webp converter ?
 img@1x img@2x?
+generate manifest with file hashes
