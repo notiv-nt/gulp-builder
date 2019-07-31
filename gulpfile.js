@@ -239,7 +239,7 @@ module.javascript = async (config) => {
   if (!config.params.hasOwnProperty('useBabel') || config.params.useBabel === true) {
     options.plugins.push(
       babel({
-        exclude: 'node_modules/**',
+        exclude: /node_modules/,
         presets: [
           [
             '@babel/env',
