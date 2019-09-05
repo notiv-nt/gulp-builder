@@ -10,14 +10,12 @@ const _ = require('gulp-load-plugins')();
 const browserSync = require('browser-sync').create();
 const nanoid = require('nanoid');
 
-const errorHandler = () => ({
-  errorHandler(err) {
-    _.notify.onError({
-      title: 'Gulp error in ' + err.plugin,
-      message: err.toString(),
-    })(err);
-  },
-});
+const errorHandler = (err) => {
+  _.notify.onError({
+    title: 'Gulp error in ' + err.plugin,
+    message: err.toString(),
+  })(err);
+};
 
 const LOCALS = {
   MINIFY: null,
@@ -69,9 +67,9 @@ const tasksConfig = (() => {
 //
 // ------------
 module.html = (config) => {
-  gulp
+  return gulp
     .src(PP(config.entry))
-    .pipe(_.plumber(errorHandler()))
+    .pipe(_.plumber({ errorHandler }))
     .pipe(
       _.include({
         includePaths: [PP(config.params.root)],
@@ -154,9 +152,9 @@ module.css = (config) => {
     );
   }
 
-  gulp
+  return gulp
     .src(PP(config.entry))
-    .pipe(_.plumber(errorHandler()))
+    .pipe(_.plumber({ errorHandler }))
 
     .pipe(
       _.postcss(preSass, {
@@ -274,7 +272,7 @@ module.javascript = async (config) => {
 };
 
 module.img = (config) => {
-  gulp
+  return gulp
     .src(PP(config.watchOn))
     .pipe(
       _.imagemin([
@@ -327,7 +325,7 @@ module.img = (config) => {
 };
 
 module.static = (config) => {
-  gulp
+  return gulp
     .src(PP(config.watchOn))
     .pipe(gulp.dest(PP(config.dest)))
     .pipe(_.if(tasksConfig.devServer === 'browsersync', browserSync.stream(), null))
@@ -335,9 +333,9 @@ module.static = (config) => {
 };
 
 module.icons = (config) => {
-  gulp
+  return gulp
     .src(PP(config.watchOn))
-    .pipe(_.plumber(errorHandler()))
+    .pipe(_.plumber({ errorHandler }))
     .pipe(
       _.svgSprite({
         shape: {
@@ -374,7 +372,7 @@ module.browserSync = () => {
       baseDir: PP(tasksConfig.dest),
     },
     port: 3030,
-    open: true,
+    open: false,
   });
 };
 
@@ -399,7 +397,7 @@ gulp.task('clean', () => {
   const rmfr = require('rmfr');
 
   // rmfr(path.resolve(process.cwd(), '.cache'));
-  console.log('Remove', PP(tasksConfig.dest));
+  console.log('Removing', PP(tasksConfig.dest));
 
   rmfr(PP(tasksConfig.dest));
   // rmfr(path.resolve(process.cwd(), 'sw.js'));
